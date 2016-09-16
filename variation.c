@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <time.h>
 
 #ifndef USERMESG
 #define USERMESG	2048
@@ -143,19 +144,26 @@ static void cleanup(void)
 
 int main(void)
 {
-	int ch;
-	char buf[PAGE_SIZE];
 	int len;
+	int index;
+	char buf[PAGE_SIZE];
 
 	read_fd = variation_open(cleanup, VARIATION, O_RDONLY);
 
 	len = variation_read(cleanup, read_fd, buf, PAGE_SIZE);
 
-	for (ch = 'a'; ch < 'z'; ch++) {
-		buf[1] = ch;
+	srandom((unsigned int)time(NULL));
+
+	index = random() % len;
+
+	while (1) {
+		buf[index] = random() % 0xff;
+
 		write_fd = variation_open(cleanup, "./tmp.c", O_WRONLY | O_CREAT, 0644);
 
 		variation_write(cleanup, write_fd, buf, len);
+
+		variation_close(cleanup, write_fd);
 
 		if (variation_compile(cleanup, "tmp") == 0)
 			break;
